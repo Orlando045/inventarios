@@ -7,14 +7,14 @@ export class CreateMateriasPrimaDto {
 
     @IsString()
     @ApiProperty()
-    nombre: string;
+    name: string;
 
     @IsString()
     @ApiProperty()
-    idScaneo: string;
+    scaneId: string;
 
     @IsString()
     @ApiProperty()
-    descripcion: string;
+    description: string;
    
 }
