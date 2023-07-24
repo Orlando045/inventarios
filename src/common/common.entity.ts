@@ -26,6 +26,13 @@ export abstract class CommonEntity {
   @Column({ name: 'deleted', type: 'boolean', default: false })
   deleted: boolean;
 
+  @Column({
+    nullable: true,
+    default: true,
+    name: 'status',
+  })
+  status: boolean
+
   @BeforeInsert()
   createEntity() {
     const currentDate = new Date();

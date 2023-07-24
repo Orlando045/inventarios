@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform } from 'class-transformer';
-import { IsBoolean, IsString } from 'class-validator';
+import { IsBoolean, IsString, isEnum } from 'class-validator';
 import { setDateLocal } from 'src/utils/utils.functions';
 
 export abstract class CommonResponseDto {
@@ -27,4 +27,11 @@ export abstract class CommonResponseDto {
   @IsBoolean()
   @ApiProperty()
   deleted: boolean;
+
+  @Expose()
+  @ApiProperty()
+  @IsBoolean()
+  // @isEnum(['available', 'unavailable', ])
+  status: boolean;
+
 }

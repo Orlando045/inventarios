@@ -25,7 +25,7 @@ import config from 'src/config';
           port,
           username: user,
           password,
-          database: dbName,
+          database: 'inventario',
           dropSchema: dropSchema,
           synchronize: synchronize,
           autoLoadEntities: true,

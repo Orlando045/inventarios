@@ -48,7 +48,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
 
   SwaggerModule.setup('api', app, document, customOptions);
- 
+
 
   app.useStaticAssets(join(__dirname, '/static'), {
     prefix: '/docs',
@@ -64,6 +64,7 @@ async function bootstrap() {
   app.enableCors();
 
   await app.listen(process.env.SERVER_PORT);
+  // await app.listen(5001, '0.0.0.0');
 
   logger.log(`Server running in ${await app.getUrl()}/docs`);
 }
