@@ -1,101 +1,100 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../entities/user.entity';
 import { Repository } from 'typeorm';
-import { plainToInstance } from 'class-transformer';
-import { ResponseUserDto } from '../dto/response-user.dto';
 import { isUUID } from 'class-validator';
 import * as bcrypt from 'bcrypt';
-import { LoginUserDto } from '../dto/login-user..dto';
-
-
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { Profile } from 'src/profile/entities/profile.entity';
+import { plainToInstance } from 'class-transformer';
+import { ResponseUserDto } from '../dto/response-user.dto';
 @Injectable()
 export class UserService {
   private readonly logger = new Logger('UserService')
-
-
   constructor(
     @InjectRepository(User)
-    private readonly _userResitory: Repository<User>,
-  ) { }
+    private readonly _userRespository: Repository<User>,
+    @InjectRepository(Profile)
+    private readonly _profileRespository: Repository<Profile>,
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
-    try {
+    const newUser = this._userRespository.create(createUserDto);
+    let user: User;
 
-      const { password, ...userData } = createUserDto
-      const newUser = this._userResitory.create({
-        ...userData, password: bcrypt.hashSync(password, 10)
-      });
-      const existingUser = await this._userResitory.findOne({
-        where: [{ fullName: createUserDto.fullName }, { username: createUserDto.username }],
-      });
-      if (existingUser) {
-        throw new BadRequestException('Ya existe un usuario con ese nombre o correo electrónico');
+    const list: Profile[] = [];
+    for (const id of createUserDto.profilesId) {
+      const temp = await this._profileRespository.findOneBy({ id: id });
+      if (!temp) {
+        throw new NotFoundException('role not found');
       }
-      await this._userResitory.save(newUser);
-      return plainToInstance(ResponseUserDto, newUser);
+      console.log(JSON.stringify(temp));
+      list.push(temp);
+    }
+    try {
+      newUser.profiles = list;
+      user = await this._userRespository.save(newUser);
     } catch (error) {
-      this.handlelDBErros(error);
+      this.handleDBExceptions(error);
     }
+    return plainToInstance(ResponseUserDto, user);
   }
 
-  private handlelDBErros(error: any): never {
-    if (error.code == '23505')
-      throw new BadRequestException(error.message)
-    console.log(error)
-    throw new InternalServerErrorException('ya existe un usuario con ese nombre ')
+  async findAll() {
+    const listUser = await this._userRespository.find({
+      relations: ['profiles'],
+      where: { deleted: false },
+    });
+    return plainToInstance(ResponseUserDto, listUser);
   }
 
-  async createLogin(loginUserDto: LoginUserDto) {
-    const { password, username } = loginUserDto
+  async findOne(id: string) {
+    const user = await this.internalFindOne(id);
+    return plainToInstance(ResponseUserDto, user);
+  }
 
-    const user = await this._userResitory.findOne({
-      where: { username },
-      select: { username: true, password: true }
-    })
+  update(id: string, updateUserDto: UpdateUserDto) {
+    return `This action updates a #${id} user`;
+  }
+
+  remove(id: string) {
+    return `This action removes a #${id} user`;
+  }
+
+  private handleDBExceptions(error: any) {
+    this.logger.error(error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      throw new ConflictException('Duplicate entry in database');
+    }
+    console.log(error);
+    throw new InternalServerErrorException(
+      'Unexpected error, check server logs',
+    );
+  }
+
+  private async internalFindOne(id: string) {
+    const user = await this._userRespository.findOne({
+      relations: ['profiles'],
+      where: { id: id, deleted: false },
+    });
     if (!user) {
-      throw new UnauthorizedException('no se encontró ese username')
-    }
-    if (!bcrypt.compareSync(password, user.password)) {
-      throw new UnauthorizedException('credentials are not  valid {password}');
+      throw new NotFoundException(`User ${id} not found`);
     }
     return user;
   }
 
-  findAll() {
-    return this._userResitory.find();
-  }
-
-  findOne(id: string) {
-    return `This action returns a #${id} user`;
-  }
-
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
-
-  async remove(id: string) {
-    const deletedUser = await this._userResitory.findOne({ where: { id: id } });
-    if (!isUUID(id)) {
-      throw new Error(`User ${id} does not exist`);
+  async findByEmail(username: string) {
+    const user = await this._userRespository.findOne({
+      relations: ['profiles'],
+      where: { username: username },
+    });
+    if (!user) {
+      this.logger.warn(`User ${username} not found`);
+      return null;
     }
-    if (isUUID(id)) {
-      return await this._userResitory.remove(deletedUser)
-    }
-  }
-
-  async rolesUpdate(id: string, roles: string): Promise<User> {
-    const product = await this._userResitory.findOne({ where: { id: id } });
-    if(!product){
-      throw new Error('No se encontró el usuario')
-    }
-
-    product.role = roles
-    const updatedRecepcion = await this._userResitory.save(product);
-    console.log(updatedRecepcion);
-    console.log(User)
-    return updatedRecepcion;
+    return user;
   }
 }

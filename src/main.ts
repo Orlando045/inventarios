@@ -30,7 +30,7 @@ async function bootstrap() {
     //type: 'http',
     //scheme: 'bearer',
     //})
-    //.addBearerAuth()
+    .addBearerAuth()
     .build();
 
   //const theme = new SwaggerTheme('v3');
@@ -42,7 +42,7 @@ async function bootstrap() {
       filter: true,
     },
     //customCss: theme.getBuffer('dark'),
-    customSiteTitle: 'API-Inventory',
+    customSiteTitle: 'API-SAI360',
   };
 
   const document = SwaggerModule.createDocument(app, config);

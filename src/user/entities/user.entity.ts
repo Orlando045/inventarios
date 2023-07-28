@@ -1,55 +1,43 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { hash } from "bcrypt";
+import { CommonEntity } from "src/common/common.entity";
+import { Profile } from "src/profile/entities/profile.entity";
+import { BeforeInsert, BeforeUpdate, Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity()
-export class User {
+@Entity({ name: 'users' })
+export class User extends CommonEntity {
+  @Column({
+    type: 'character varying',
+    length: 255,
+    nullable: false,
+    unique: true,
+  })
+  username: string;
 
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @Column({
+    type: 'character varying',
+    length: 128,
+    nullable: false,
+    select: false,
+  })
+  password: string;
 
-    @Column(
-        {
-           
-            nullable: true,
-            select: false
-        }
-    )
-    password: string;
+  @ManyToMany(() => Profile)
+  @JoinTable({ name: 'user_profile' })
+  profiles: Profile[];
 
-    @Column(
-        {
-            nullable: true,
-            type: 'text'
-        }
-    )
-    fullName: string;
+  @BeforeInsert()
+  @BeforeUpdate()
+  async hashPassword() {
+    if (!this.password) {
+      return;
+    }
+    this.password = await hash(this.password, 10);
+  }
 
-    @Column(
-        {
-            type: 'text',
-            nullable: true
-        }
-    )
-    username: string;
-
-    @Column(
-        {
-            default: true,
-            nullable: true
-        }
-    )
-
-    @Column(
-        {
-            nullable: true
-        }
-    )
-    isActive: boolean;
-
-    @Column(
-        {
-            nullable: true,
-            default: 'Almacenista',
-        }
-    )
-    role: string;
+  @BeforeInsert()
+  @BeforeUpdate()
+  checkEmail() {
+    this.username = this.username.toLowerCase().trim();
+  }
 }
+

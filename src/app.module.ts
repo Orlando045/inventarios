@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from './database/database.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { enviroments } from './enviroments';
 import { RawMaterialModule } from './raw_material/raw_material.module';
 import { RegisterOutputsModule } from './register_outputs/register_outputs.module';
@@ -19,8 +19,13 @@ import { LoteOfProductsModule } from './lote-of-products/lote-of-products.module
 import { ScannedOrderModule } from './scanned-order/scanned-order.module';
 import { PackageScannedModule } from './package-scanned/package-scanned.module';
 import { UserModule } from './user/user.module';
-import { PerfilModule } from './perfil/perfil.module';
+import { ProfileModule } from './profile/profile.module';
+import { AuthModule } from './auth/auth.module';
 import config from './config';
+import { UserService } from './user/services/user.service';
+import { ProfilesService } from './profile/services/profile.service';
+import { setDefaultProfiles } from './user/config/default-profile';
+import { setDefaultUser } from './user/config/default-users';
 
 @Module({
   imports: [
@@ -46,9 +51,19 @@ import config from './config';
     ScannedOrderModule,
     PackageScannedModule,
     UserModule,
-    PerfilModule,
+    ProfileModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(
+    private readonly _configService: ConfigService,
+    private readonly _userService: UserService,
+    private readonly _profileService: ProfilesService,
+  ) {
+    setDefaultProfiles(_configService, _profileService);
+    setDefaultUser(_configService, _userService, _profileService);
+  }
+}
